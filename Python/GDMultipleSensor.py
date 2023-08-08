@@ -27,8 +27,8 @@ def on_connect(client, userdata, flags, rc):
 
 # Function to send Telegram notification
 def send_telegram_notification(message):
-    telegram_bot_token = '6535063345:AAHun_qIfnCCvLYdaXaos2bhLYtPtQ1im7k'
-    telegram_chat_id = '1063310531'
+    telegram_bot_token = '6535063345:*******************'
+    telegram_chat_id = '1063********'
 
     telegram_api_url = f"https://api.telegram.org/bot{telegram_bot_token}/sendMessage"
     data = {
@@ -98,7 +98,7 @@ mqtt_client.loop_start()
 
 class InfluxDB:
     def __init__(self, bucket="AIoT"):
-        self.token = "4S-CyOmTPUhSgUiUSf0A8Fn31keTgErGXCoxoN1makt745rOxeASQAczKo_9K8IK7i-BZDq6L2bg7Y7Qr20qLQ=="
+        self.token = "4S-CyOmTPUhSgUiUSf0A8Fn31keTgErGXCoxoN1makt745rOx************************"
         self.org = "Christ"
         # self.url = "http://localhost:8086"
         self.url = "http://10.21.70.16:8086"
