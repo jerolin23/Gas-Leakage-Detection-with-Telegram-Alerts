@@ -1,20 +1,69 @@
-#include <SPI.h>
+
 #include <Ethernet.h>
+#include <Wire.h>
 #include <PubSubClient.h>
+#include <ArduinoJson.h>
+#include "HardwareSerial.h"
 
-// Update these with values suitable for your network.
-byte mac[]    = {  0xDE, 0xED, 0xBA, 30, 0xFE, 0xED };
-IPAddress ip(172, 16, 0, 100);
-IPAddress server(44, 195, 202, 69);
+const char* device_unique_id = "GasLeakageConcentration_" __DATE__ "_" __TIME__;
 
+#define SERIAL_OUTPUT
+#ifdef SERIAL_OUTPUT
+#define PRINT(x)   Serial.print(x)
+#define PRINTLN(x) Serial.println(x)
+#else
+#define PRINT(x)   
+#define PRINTLN(x) 
+#endif
 
-const int Sensor1Pin = 35; 
-const int Sensor2Pin = 34;   
-const int Sensor3Pin = 32;   
-const int Sensor4Pin = 31;
+// Enter a MAC address and IP address for your controller below.
+// The IP address will be dependent on your local network:
+byte mac[] = {
+  0xDE, 0xAD, 0xBE, 0xEF, 30, 0xF7
+};
+IPAddress ip(192, 168, 0, 77);
+//IPAddress ip(10, 5, 15, 109);
 
-EthernetClient ethClient;
-PubSubClient client(ethClient);
+// Enter the IP address of the server you're connecting to:
+//IPAddress server(192, 168, 100, 2);
+//IPAddress server(10, 5, 15, 78);
+IPAddress server(10, 21, 70, 16);
+IPAddress myDns(192, 168, 0, 1);
+
+IPAddress mqtt_server(10, 21, 70, 16);
+//IPAddress mqtt_server(44, 195, 202, 69);
+EthernetClient mqttClient;
+PubSubClient mqtt_client(mqttClient);
+// bool capture_requested = 0;
+const int Sensor1Pin = A0; 
+const int Sensor2Pin = A1;   
+const int Sensor3Pin = A2;   
+const int Sensor4Pin = A3;
+
+// Publish the sensor values to their respective MQTT topics
+const char Sensor1Topic[] = "GS-1";
+const char Sensor2Topic[] = "GS-2";
+const char Sensor3Topic[] = "GS-3";
+const char Sensor4Topic[] = "GS-4";
+
+//===================================================================================================
+
+// void callback(char* topic, byte* payload, unsigned int length) {
+//   PRINT(">>>>>>>>>>> Message arrived [");
+//   PRINT(topic);
+//   PRINT("] ");
+//   String cmd = "";
+//   for (int i=0;i<length;i++) {
+//     cmd += (char)payload[i];
+//     PRINT((char)payload[i]);
+//   }
+//   PRINTLN();
+
+//   if (cmd == "cmd:capture") {
+//     capture_requested = 1;
+//     PRINTLN("Capture requested!!!");
+//   }
+// }
 
 void callback(char* topic, byte* payload, unsigned int length) {
   String message = "";
@@ -26,80 +75,117 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 void reconnect() {
   // Loop until we're reconnected
-  while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
+  while (!mqtt_client.connected()) {
+    PRINT("MQTT: Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("arduinoClient30")) {
-      Serial.println("connected");
-      // Once connected, publish an announcement...
-      client.publish("Out", "hello world");
+    if (mqtt_client.connect(device_unique_id)) {
+      PRINTLN("MQTT: connected");
       // ... and resubscribe
-      client.subscribe("gas_concentration");
+      mqtt_client.subscribe("MQTT-W5300");
     } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 10 seconds");
+      PRINT("MQTT: failed, rc=");
+      PRINT(mqtt_client.state());
+      PRINTLN(" MQTT: try again in 5 seconds");
       // Wait 5 seconds before retrying
-      delay(10000);
+      delay(2000);
     }
   }
 }
 
-void setup()
-{
-  Serial.begin(57600);
-  Ethernet.init(17);
-  client.setServer(server, 1883);
-  client.setCallback(callback);
+//===================================================================================================
 
-  Ethernet.begin(mac);
-  delay(1500);
+void setup() {
+    // Open serial communications and wait for port to open:
+  Serial3.setRx(PC11);
+  Serial3.setTx(PC10);  
+  delay(50);
 
+    // Serial.println("pinMode...");
   pinMode(Sensor1Pin, INPUT);  
   pinMode(Sensor2Pin, INPUT);    
   pinMode(Sensor3Pin, INPUT); 
   pinMode(Sensor4Pin, INPUT);
+
+  // Open serial communications and wait for port to open:
+  Serial.begin(9600);
+  
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB port only
+  }
+  
+   // start the Ethernet connection:
+  PRINTLN("Initialize Ethernet with DHCP:");
+  if (Ethernet.begin(mac) == 0) {
+    PRINTLN("Failed to configure Ethernet using DHCP");
+    // Check for Ethernet hardware present
+    if (Ethernet.hardwareStatus() == EthernetNoHardware) {
+      PRINTLN("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
+      while (true) {
+        delay(1); // do nothing, no point running without Ethernet hardware
+      }
+    }
+    if (Ethernet.linkStatus() == LinkOFF) {
+      PRINTLN("Ethernet cable is not connected.");
+    }
+    // try to congifure using IP address instead of DHCP:
+    Ethernet.begin(mac, ip, myDns);
+  } else {
+    PRINT("  DHCP assigned IP ");
+    PRINTLN(Ethernet.localIP());
+  }
+  
+  // give the Ethernet shield a second to initialize:
+  delay(1000);
+
+  mqtt_client.setServer(mqtt_server, 1883);
+  mqtt_client.setCallback(callback);
+
+  // give the Ethernet shield a second to initialize:
+  delay(1000);
+
 }
 
-void loop()
-{
-  if (!client.connected()) {
+String valstr = "";
+
+void loop() {
+
+  if (!mqtt_client.connected()) {
     reconnect();
   }
-  client.loop();
+  mqtt_client.loop();
 
   // Read sensor values
-  float Sensor1Value = readSensor1();
-  float Sensor2Value = readSensor2();
-  float Sensor3Value = readSensor3();
-  float Sensor4Value = readSensor4();
+  int Sensor1Value = readSensor1();
+  int Sensor2Value = readSensor2();
+  int Sensor3Value = readSensor3();
+  int Sensor4Value = readSensor4();
 
-  // Publish the sensor values to their respective MQTT topics
-  char Sensor1Topic[] = "GS-1";
-  char Sensor2Topic[] = "GS-2";
-  char Sensor3Topic[] = "GS-3";
-  char Sensor4Topic[] = "GS-4";
+  valstr = "";
+  valstr += Sensor1Value;
+  PRINTLN(valstr);
+  mqtt_client.publish(Sensor1Topic, valstr.c_str());
 
-  char payload[10];
+  valstr = "";
+  valstr += Sensor2Value;
+  PRINTLN(valstr);
+  mqtt_client.publish(Sensor2Topic, valstr.c_str());
 
-  snprintf(payload, sizeof(payload), "%f", Sensor1Value);
-  client.publish(Sensor1Topic, payload);
+  valstr = "";
+  valstr += Sensor3Value;
+  PRINTLN(valstr);
+  mqtt_client.publish(Sensor3Topic, valstr.c_str());
 
-  snprintf(payload, sizeof(payload), "%f", Sensor2Value);
-  client.publish(Sensor2Topic, payload);
-
-  snprintf(payload, sizeof(payload), "%f", Sensor3Value);
-  client.publish(Sensor3Topic, payload);
-
-  snprintf(payload, sizeof(payload), "%f", Sensor4Value);
-  client.publish(Sensor4Topic, payload);
+  valstr = "";
+  valstr += Sensor4Value;
+  PRINTLN(valstr);
+  mqtt_client.publish(Sensor4Topic, valstr.c_str());
 
   // Adjust the interval between readings and publications
-  delay(10000);
+  delay(3000);
 }
 
 // Function to read gas sensor value
-float readSensor1() {
+int readSensor1() {
   // Read the analog value from the gas sensor using analogRead function
   int Sensor1Value = analogRead(Sensor1Pin);
 
@@ -111,7 +197,7 @@ float readSensor1() {
 }
 
 // Function to read sensor 2 value
-float readSensor2() {
+int readSensor2() {
   // Read the analog value from the second sensor using analogRead function
   int Sensor2Value = analogRead(Sensor2Pin);
 
@@ -123,7 +209,7 @@ float readSensor2() {
 }
 
 // Function to read sensor 3 value
-float readSensor3() {
+int readSensor3() {
   // Read the analog value from the third sensor using analogRead function
   int Sensor3Value = analogRead(Sensor3Pin);
 
@@ -135,7 +221,7 @@ float readSensor3() {
 }
 
 // Function to read sensor 4 value
-float readSensor4() {
+int readSensor4() {
   // Read the analog value from the third sensor using analogRead function
   int Sensor4Value = analogRead(Sensor4Pin);
 
