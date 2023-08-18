@@ -68,8 +68,16 @@ def process_gas_sensor(sensor):
 
         field_name = "gas_concentration_" + sensor["name"]  # Generate unique field name for each sensor
 
-        if average > 30:
+        if sensor['name'] == 'Sensor1' and average > 30:
             send_telegram_notification(f"{sensor['name']} - Average value: {average:.2f} LEAKAGE DETECTED!!!")
+        elif sensor['name'] == 'Sensor2' and average > 40:
+            send_telegram_notification(f"{sensor['name']} - Average value: {average:.2f} LEAKAGE DETECTED!!!")
+        elif sensor['name'] == 'Sensor3' and average > 50:
+            send_telegram_notification(f"{sensor['name']} - Average value: {average:.2f} LEAKAGE DETECTED!!!")
+        elif sensor['name'] == 'Sensor4' and average > 60:
+            send_telegram_notification(f"{sensor['name']} - Average value: {average:.2f} LEAKAGE DETECTED!!!")
+        else:
+            print(f"{sensor['name']} - No Leakage")
 
         print(f"{sensor['name']} - Average value: {average:.2f}")
 
