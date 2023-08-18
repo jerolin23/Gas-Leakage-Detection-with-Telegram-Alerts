@@ -70,11 +70,11 @@ def process_gas_sensor(sensor):
 
         if sensor['name'] == 'Sensor1' and average > 9:
             send_telegram_notification(f"{sensor['name']} - Average value: {average:.2f} LEAKAGE DETECTED!!!")
-        elif sensor['name'] == 'Sensor2' and average > 1000:
+        elif sensor['name'] == 'Sensor2' and average > 9:
             send_telegram_notification(f"{sensor['name']} - Average value: {average:.2f} LEAKAGE DETECTED!!!")
         elif sensor['name'] == 'Sensor3' and average > 1000:
             send_telegram_notification(f"{sensor['name']} - Average value: {average:.2f} LEAKAGE DETECTED!!!")
-        elif sensor['name'] == 'Sensor4' and average > 1000:
+        elif sensor['name'] == 'Sensor4' and average > 500:
             send_telegram_notification(f"{sensor['name']} - Average value: {average:.2f} LEAKAGE DETECTED!!!")
         else:
             print(f"{sensor['name']} - No Leakage")
