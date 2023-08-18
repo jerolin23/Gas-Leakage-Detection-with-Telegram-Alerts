@@ -27,10 +27,10 @@ IPAddress ip(192, 168, 0, 77);
 // Enter the IP address of the server you're connecting to:
 //IPAddress server(192, 168, 100, 2);
 //IPAddress server(10, 5, 15, 78);
-IPAddress server(10, 21, 70, 16);
+IPAddress server(44, 195, 202, 69);
 IPAddress myDns(192, 168, 0, 1);
 
-IPAddress mqtt_server(10, 21, 70, 16);
+IPAddress mqtt_server(44, 195, 202, 69);
 //IPAddress mqtt_server(44, 195, 202, 69);
 EthernetClient mqttClient;
 PubSubClient mqtt_client(mqttClient);
@@ -155,10 +155,15 @@ void loop() {
   mqtt_client.loop();
 
   // Read sensor values
-  int Sensor1Value = readSensor1();
-  int Sensor2Value = readSensor2();
-  int Sensor3Value = readSensor3();
-  int Sensor4Value = readSensor4();
+  int Sensor1Value = readSensor1(Sensor1Pin);
+  int Sensor2Value = readSensor2(Sensor2Pin);
+  int Sensor3Value = readSensor3(Sensor3Pin);
+  int Sensor4Value = readSensor4(Sensor4Pin);
+
+  float ppm1 = convertSensor1(Sensor1Value);
+  float ppm2 = convertSensor2(Sensor2Value);
+  float ppm3 = convertSensor3(Sensor3Value);
+  float ppm4 = convertSensor4(Sensor4Value);
 
   valstr = "";
   valstr += Sensor1Value;
@@ -184,50 +189,70 @@ void loop() {
   delay(3000);
 }
 
-// Function to read gas sensor value
-int readSensor1() {
-  // Read the analog value from the gas sensor using analogRead function
+int readSensor1(int Sensor1Pin) {
   int Sensor1Value = analogRead(Sensor1Pin);
-
-  // Display the raw analog value on the Serial Monitor
   Serial.print("Sensor 1 Value: ");
   Serial.println(Sensor1Value);
-
-  return Sensor1Value; // Return the raw analog value without mapping or scaling
+  return Sensor1Value;
 }
 
-// Function to read sensor 2 value
-int readSensor2() {
-  // Read the analog value from the second sensor using analogRead function
+int readSensor2(int Sensor2Pin) {
   int Sensor2Value = analogRead(Sensor2Pin);
-
-  // Display the raw analog value on the Serial Monitor
   Serial.print("Sensor 2 Value: ");
   Serial.println(Sensor2Value);
-
-  return Sensor2Value; // Return the raw analog value without mapping or scaling
+  return Sensor2Value;
 }
 
-// Function to read sensor 3 value
-int readSensor3() {
-  // Read the analog value from the third sensor using analogRead function
+int readSensor3(int Sensor3Pin) {
   int Sensor3Value = analogRead(Sensor3Pin);
-
-  // Display the raw analog value on the Serial Monitor
   Serial.print("Sensor 3 Value: ");
   Serial.println(Sensor3Value);
-
-  return Sensor3Value; // Return the raw analog value without mapping or scaling
+  return Sensor3Value;
 }
 
-// Function to read sensor 4 value
-int readSensor4() {
-  // Read the analog value from the third sensor using analogRead function
+int readSensor4(int Sensor4Pin) {
   int Sensor4Value = analogRead(Sensor4Pin);
-
-  // Display the raw analog value on the Serial Monitor
   Serial.print("Sensor 4 Value: ");
   Serial.println(Sensor4Value);
+  return Sensor4Value;
+}
 
-  return Sensor4Value; // Return the raw analog value without mapping or scaling
+float convertSensor1(int Sensor1Value) {
+  float voltage1 = Sensor1Value * (5.0 / 1023.0);
+  float m = -1.4065;
+  float b = 2.0162;
+  float ppm1 = (-(m * voltage1) + b);
+  Serial.print("Sensor 1 ppm value: ");
+  Serial.println(ppm1);
+  return ppm1;
+}
+
+float convertSensor2(int Sensor2Value) {
+  float voltage2 = Sensor2Value * (5.0 / 1023.0);
+  float m = -2.2535;
+  float b = 2.9855;
+  float ppm2 = (-(m * voltage2) + b);
+  Serial.print("Sensor 2 ppm value: ");
+  Serial.println(ppm2);
+  return ppm2;
+}
+
+float convertSensor3(int Sensor3Value) {
+  float voltage3 = Sensor3Value * (5.0 / 1023.0);
+  float m = -1.4350;
+  float b = 0.4103;
+  float ppm3 = (-(m * voltage3) + b);
+  Serial.print("Sensor 3 ppm value: ");
+  Serial.println(ppm3);
+  return ppm3;
+}
+
+float convertSensor4(int Sensor4Value) {
+  float voltage4 = Sensor4Value * (5.0 / 1023.0);
+  float m = 0.9873;
+  float b = 2.6386;
+  float ppm4 = ((m * voltage4) + b);
+  Serial.print("Sensor 4 ppm value: ");
+  Serial.println(ppm4);
+  return ppm4;
 }
