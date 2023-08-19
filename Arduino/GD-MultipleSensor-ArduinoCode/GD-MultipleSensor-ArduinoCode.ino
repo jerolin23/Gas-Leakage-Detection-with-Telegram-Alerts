@@ -35,10 +35,10 @@ IPAddress mqtt_server(44, 195, 202, 69);
 EthernetClient mqttClient;
 PubSubClient mqtt_client(mqttClient);
 // bool capture_requested = 0;
-const int Sensor1Pin = A0; 
-const int Sensor2Pin = A1;   
-const int Sensor3Pin = A2;   
-const int Sensor4Pin = A3;
+const int Sensor1Pin = D11; 
+const int Sensor2Pin = D13;   
+const int Sensor3Pin = D14;   
+const int Sensor4Pin = D15;
 
 // Publish the sensor values to their respective MQTT topics
 const char Sensor1Topic[] = "GS-1";
